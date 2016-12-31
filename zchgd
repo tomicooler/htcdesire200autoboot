@@ -1,0 +1,36 @@
+#!/system/bin/sh
+
+log -p v -t "zchgdwrapper"  "Starting fake zchgd service; args='$@'"
+
+if [ "$#" -eq 1 ]; then
+    case $1 in
+    -pseudooffmode)
+        log -p v -t "zchgdwrapper"  "PseudoOffMode service"
+        while true; do
+           sleep 60
+           enabled=$(cat /sys/class/power_supply/battery/charging_enabled)
+           log -p v -t "zchgdwrapper"  "Checking battery charging enabled; enabled='$enabled'"
+           if [ "$enabled" -gt 0 ]; then
+               log -p v -t "zchgdwrapper"  "Going to magic-reboot"
+               su -c "echo 1 > /proc/sys/kernel/sysrq"
+               su -c "echo b > /proc/sysrq-trigger"
+               ret=$?
+               log -p v -t "zchgdwrapper"  "Magic-reboot issued ret='$ret'"
+               sleep 120
+               exit 0
+           fi
+        done
+    ;;
+    -onmode)
+        log -p v -t "zchgdwrapper"  "OnMode service"
+        while true; do
+          log -p v -t "zchgdwrapper"  "Sleeping beauty"
+          sleep 3600 
+        done
+    ;;
+    esac
+fi
+
+log -p v -t "zchgdwrapper"  "Not gonna happen - starting the original service"
+/system/bin/zchgd_original $@
+exit $?
